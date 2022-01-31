@@ -1,9 +1,15 @@
 import flatpickr from "flatpickr";
 import 'flatpickr/dist/flatpickr.min.css';
 
+const refs = {
+  startBtn: document.querySelector('button[data-start]'),
+  days: document.querySelector('span[data-days]'),
+  hours: document.querySelector('span[data-hours]'),
+  minutes: document.querySelector('span[data-minutes]'),
+  seconds: document.querySelector('span[data-seconds]')
+}
 
 const options = {
-  isActive: false,
   enableTime: true,
   time_24hr: true,
   defaultDate: new Date(),
@@ -11,15 +17,27 @@ const options = {
   onClose(selectedDates) {
     // console.log('selectedDate', selectedDates);
     localStorage.setItem('selectedDate', selectedDates[0]);
+    console.log(selectedDates[0]);
+    console.log(Date.parse(selectedDates[0]));
+    console.log(Date.now());
+    if (Date.parse(selectedDates[0]) < Date.now()) {
+      window.alert("Please choose a date in the future");
+      return;
+    }
+    refs.startBtn.removeAttribute('disabled', 'disabled');
   }
 }
 
 const fp = flatpickr("#datetime-picker", options);
-const startRef = document.querySelector('button[data-start]');
 
-const timer = {
+class Timer {
+  constructor() {
+    this.intervalId = null;
+    this.isActive = false;
+  }
+
   start() {
-    if (options.isActive) {
+    if (this.isActive) {
       return;
     }
     const finalDate = localStorage.getItem('selectedDate');
@@ -27,30 +45,37 @@ const timer = {
     const getFinalUnixTime = Date.parse(finalDate);
 
     localStorage.removeItem('selectedDate');
-    options.isActive = true;
+    this.isActive = true;
 
-    setInterval(() => {
+    this.intervalId = setInterval(() => {
       // console.log('defaultDate:', options.defaultDate);
       const currentTime = Date.now();
       // console.log('getFinalUnixTime:', getFinalUnixTime);
       // console.log('currentTime:', currentTime);
+      if (getFinalUnixTime < currentTime) {
+          this.stop();
+          return;
+      }
+      
       const deltaTime = getFinalUnixTime - currentTime;
       // console.log(deltaTime);
-      const timeComponents = convertMs(deltaTime);
+      
+      const timeComponents = this.convertMs(deltaTime);
       console.log(timeComponents);
       const { days, hours, minutes, seconds } = timeComponents;
       console.log(`${days}:${hours}:${minutes}:${seconds}`);
+
+      toDrawTimerFace(timeComponents);
     }, 1000)
   }
-}
 
-startRef.addEventListener('click', () => {
-  timer.start();
-});
+  stop() {
+    clearInterval(this.intervalId);
+    refs.startBtn.setAttribute('disabled', 'disabled');
+    this.isActive = false;
+  }
 
-
-
-function convertMs(ms) {
+  convertMs(ms) {
   // Number of milliseconds per unit of time
   const second = 1000;
   const minute = second * 60;
@@ -58,18 +83,29 @@ function convertMs(ms) {
   const day = hour * 24;
 
   // Remaining days
-  const days = Math.floor(ms / day);
+  const days = this.addLeadingZero(Math.floor(ms / day));
   // Remaining hours
-  const hours = Math.floor((ms % day) / hour);
+  const hours = this.addLeadingZero(Math.floor((ms % day) / hour));
   // Remaining minutes
-  const minutes = Math.floor(((ms % day) % hour) / minute);
+  const minutes = this.addLeadingZero(Math.floor(((ms % day) % hour) / minute));
   // Remaining seconds
-  const seconds = Math.floor((((ms % day) % hour) % minute) / second);
+  const seconds = this.addLeadingZero(Math.floor((((ms % day) % hour) % minute) / second));
 
   return { days, hours, minutes, seconds };
 }
 
-// console.log(convertMs(2000)); // {days: 0, hours: 0, minutes: 0, seconds: 2}
-// console.log(convertMs(140000)); // {days: 0, hours: 0, minutes: 2, seconds: 20}
-// console.log(convertMs(24140000)); // {days: 0, hours: 6 minutes: 42, seconds: 20}
+    addLeadingZero(value) {
+    return String(value).padStart(2, '0');
+  }
+}
 
+const timer = new Timer();
+
+refs.startBtn.addEventListener('click', timer.start.bind(timer));
+
+function toDrawTimerFace({ days, hours, minutes, seconds }) {
+  refs.days.textContent = days;
+  refs.hours.textContent = hours;
+  refs.minutes.textContent = minutes;
+  refs.seconds.textContent = seconds;
+}
