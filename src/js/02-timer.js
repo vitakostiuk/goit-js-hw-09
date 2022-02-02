@@ -16,13 +16,8 @@ const options = {
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    // console.log('selectedDate', selectedDates);
     localStorage.setItem('selectedDate', selectedDates[0]);
-    // console.log(selectedDates[0]);
-    // console.log(Date.parse(selectedDates[0]));
-    // console.log(Date.now());
     if (Date.parse(selectedDates[0]) < Date.now()) {
-      // window.alert("Please choose a date in the future");
       Notify.warning("Please choose a date in the future");
       return;
     }
@@ -45,23 +40,19 @@ class Timer {
     const finalDate = localStorage.getItem('selectedDate');
     // console.log('finalDate:', finalDate);
     const getFinalUnixTime = Date.parse(finalDate);
+    // console.log('getFinalUnixTime:', getFinalUnixTime);
 
     localStorage.removeItem('selectedDate');
     this.isActive = true;
 
     this.intervalId = setInterval(() => {
-      // console.log('defaultDate:', options.defaultDate);
       const currentTime = Date.now();
-      // console.log('getFinalUnixTime:', getFinalUnixTime);
-      // console.log('currentTime:', currentTime);
       if (getFinalUnixTime < currentTime) {
           this.stop();
           return;
       }
       
       const deltaTime = getFinalUnixTime - currentTime;
-      // console.log(deltaTime);
-      
       const timeComponents = this.convertMs(deltaTime);
       console.log(timeComponents);
       const { days, hours, minutes, seconds } = timeComponents;
@@ -96,7 +87,7 @@ class Timer {
   return { days, hours, minutes, seconds };
 }
 
-    addLeadingZero(value) {
+  addLeadingZero(value) {
     return String(value).padStart(2, '0');
   }
 }
